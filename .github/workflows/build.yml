@@ -1,0 +1,118 @@
+name: Build Nikke Tower Tracker
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller pillow
+
+      - name: Build Linux
+        run: |
+          pyinstaller \
+            --onefile \
+            --windowed \
+            --name NikkeTowerTracker \
+            --add-data "assets:assets" \
+            main.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NikkeTowerTracker-linux
+          path: dist/NikkeTowerTracker
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller pillow
+
+      - name: Create Windows icon from nikke.jpeg
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path build | Out-Null
+          @'
+          from pathlib import Path
+          from PIL import Image
+
+          source = Path("assets/icons/nikke.jpeg")
+          target = Path("build/nikke.ico")
+          with Image.open(source) as image:
+              image.convert("RGBA").save(
+                  target,
+                  format="ICO",
+                  sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)],
+              )
+          '@ | python
+
+      - name: Build Windows
+        run: |
+          pyinstaller `
+            --onefile `
+            --windowed `
+            --name NikkeTowerTracker `
+            --icon build/nikke.ico `
+            --add-data "assets;assets" `
+            main.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NikkeTowerTracker-windows
+          path: dist/NikkeTowerTracker.exe
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - build-linux
+      - build-windows
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: NikkeTowerTracker-linux
+          path: release
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: NikkeTowerTracker-windows
+          path: release
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: release/**

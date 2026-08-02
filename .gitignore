@@ -1,0 +1,16 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+
+# Build and distribution artifacts
+build/
+dist/
+*.spec
+
+# Virtual environments
+.venv/
+venv/
+
+# Generated reports and local application data
+reports/
+data.json
