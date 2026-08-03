@@ -23,7 +23,7 @@ Enter the last floor you reached, your mold count, and the number of openings yo
 
 Download the latest ready-to-run executable from the [Releases](https://github.com/mortysmith-c137/nikke-tower-tracker/releases) section.
 
-## Build and Run from Source
+## Run from Source
 
 Clone the repository and create a virtual environment if you would like to keep the dependency isolated:
 
